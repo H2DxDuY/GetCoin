@@ -1,0 +1,504 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Get Coins</title>
+  <style>
+    * { box-sizing: border-box; margin:0; padding:0; }
+    body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif; background:#fff; color:#000; }
+    .screen { max-width:420px; margin:0 auto; padding:16px; min-height:100vh; position:relative; }
+    .top-link { position:absolute; top:12px; right:16px; font-size:13px; color:#999; cursor:pointer; }
+    .top-link:hover { text-decoration:underline; }
+    .header { display:flex; align-items:center; gap:10px; margin-bottom:6px; }
+    .logo-img { width:32px; height:32px; object-fit:contain; }
+    .title { font-size:18px; font-weight:600; }
+    .subtitle1 { font-size:14px; font-weight:700; margin-bottom:2px; }
+    .subtitle { font-size:13px; color:#e53935; margin-bottom:16px; }
+    .username-label { font-size:13px; color:#999; margin-bottom:6px; }
+    .input-container { position:relative; width:100%; margin-bottom:18px; }
+    .input { width:100%; padding:14px 36px 14px 16px; font-size:14px; border:1px solid #e5e5e5; border-radius:14px; outline:none; }
+    #status-icon { position:absolute; right:14px; top:50%; transform:translateY(-50%); display:flex; align-items:center; justify-content:center; width:18px; height:18px; font-size:16px; }
+    .grid { display:grid; grid-template-columns:repeat(2,1fr); gap:12px; }
+    .card { border:1px solid #e5e5e5; border-radius:16px; padding:10px; text-align:center; cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:4px; background:#f5f5f5; transition:all .2s ease; }
+    .card.active { border-color:#fe2c55; background:rgba(254,44,85,.08); }
+    .coin-row { display:flex; align-items:center; gap:4px; }
+    .coin-img { width:18px; height:18px; object-fit:contain; }
+    .coin { font-size:18px; font-weight:600; }
+    .price { font-size:13px; color:#777; }
+    .custom { padding:10px; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+    .custom-title { font-size:15px; font-weight:600; }
+    .custom-sub { font-size:12px; color:#777; margin-top:4px; }
+    .payment { margin-top:22px; display:flex; align-items:center; justify-content:space-between; gap:12px; }
+    .payment-title { font-size:13px; font-weight:700; }
+    .methods { display:flex; gap:10px; }
+    .pay-logo { height:14px; max-width:40px; object-fit:contain; opacity:.9; }
+    .btn { margin-top:26px; width:100%; padding:14px; background:#fe2c55; color:#fff; border:none; border-radius:16px; font-size:16px; font-weight:600; cursor:pointer; }
+    .btn:active { opacity:.85; }
+    .secure { margin-top:8px; text-align:center; font-size:12px; color:#888; }
+    @keyframes spin { 0%{transform:rotate(0deg);} 100%{transform:rotate(360deg);} }
+    .spinner { border:2px solid #ccc; border-top:2px solid #fe2c55; border-radius:50%; width:18px; height:18px; animation:spin 1s linear infinite; }
+    .check { color:#28a745; font-weight:bold; font-size:16px; display:flex; align-items:center; justify-content:center; }
+    .modal-overlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:999; align-items:flex-end; justify-content:center; }
+    .modal-center { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); align-items: center; justify-content: center; z-index: 1000; }
+    .modal-content-center { background: #fff; padding: 30px 20px; border-radius: 16px; max-width: 300px; width: 90%; text-align: center; }
+    #order-summary-modal .summary-content,
+    #order-summary-custom-modal .summary-content { background:#fff; padding:20px 0 0 0; border-radius:16px 16px 0 0; max-width:420px; width:100%; position:relative; animation:slideUp .3s ease-out forwards; }
+    @keyframes slideUp { 0%{transform:translateY(100%); opacity:.5;} 100%{transform:translateY(0); opacity:1;} }
+    .summary-header { display:flex; justify-content:space-between; align-items:center; font-size:18px; font-weight:600; padding:0 20px 15px 20px; border-bottom:1px solid #eee; }
+    .summary-close { cursor:pointer; font-size:24px; color:#999; }
+    .summary-body { padding:15px 20px; }
+    .summary-row { display:flex; justify-content:space-between; margin-bottom:12px; font-size:15px; }
+    .summary-row:last-of-type { font-weight:700; margin-bottom:20px; }
+    .summary-row.total-row { color:#fe2c55; font-size:18px; margin-top:10px; }
+    .summary-row.total-row span:first-child { color:#000; font-weight:700; }
+    .payment-methods-section { margin-top:20px; border-top:1px solid #eee; padding-top:20px; }
+    .payment-select-title { font-size:14px; font-weight:600; margin-bottom:15px; }
+    .radio-option { display:flex; align-items:center; margin-bottom:15px; cursor:pointer; font-size:15px; }
+    .radio-option input[type="radio"] { margin-right:10px; transform:scale(1.1); }
+    .payment-logos { display:inline-flex; gap:5px; margin-left:10px; align-items:center; }
+    .payment-logos img { height:18px; }
+    .terms { font-size:12px; color:#555; text-align:left; padding:0 20px 20px 20px; }
+    .terms strong { font-weight:700; color:#000; }
+    .pay-now-container { padding:0 20px 20px 20px; }
+    .pay-now-btn { width:100%; padding:14px; background:#fe2c55; color:#fff; border:none; border-radius:12px; font-size:17px; font-weight:600; cursor:pointer; }
+    .pay-now-btn:active { opacity:.85; }
+    .pay-now-btn:disabled { background:#f0f0f0; color:#ccc; cursor:not-allowed; }
+    #custom-modal .custom-content { background:#fff; padding:20px; border-radius:16px; max-width:320px; width:90%; text-align:center; }
+    .custom-title-header { font-size:18px; font-weight:600; margin-bottom:20px; }
+    .input-display { font-size:28px; font-weight:700; margin-bottom:30px; display:flex; align-items:center; justify-content:center; }
+    .coin-icon { width:28px; height:28px; object-fit:contain; margin-right:5px; }
+    .cursor { display:inline-block; width:2px; height:28px; background:#000; margin-left:2px; animation:blink 1s step-end infinite; }
+    @keyframes blink { 50% { background: transparent; } }
+    .keypad { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:20px; }
+    .key { padding:15px 0; background:#f5f5f5; border-radius:8px; font-size:20px; font-weight:600; cursor:pointer; user-select:none; transition:background .1s; }
+    .key:active { background:#e0e0e0; }
+    .key-backspace { font-size:24px; }
+    .total-price-display { font-size:14px; color:#777; margin-bottom:15px; text-align:left; }
+    .recharge-btn-custom { width:100%; padding:14px; background:#fe2c55; color:#fff; border:none; border-radius:12px; font-size:17px; font-weight:600; cursor:pointer; }
+    .recharge-btn-custom:disabled { background:#f0f0f0; color:#ccc; cursor:not-allowed; }
+    #processing-modal .timer { font-size:26px; font-weight:700; color:#333; text-align:center; }
+    #success-modal .check-circle { width:60px; height:60px; margin:0 auto 10px; border-radius:50%; background:#00cc66; display:flex; align-items:center; justify-content:center; font-size:40px; color:#fff; font-weight:bold; }
+    #success-modal h3 { margin-top:10px; }
+    #success-modal .success-info { font-size:14px; color:#777; margin-top:10px; line-height:1.4; }
+    #success-modal .success-info strong { color:#000; }
+    #success-modal .success-btn { margin-top:20px; padding:12px 20px; background:#fe2c55; color:#fff; border:none; border-radius:10px; cursor:pointer; font-size:16px; font-weight:600; }
+  
+    
+    .loading-dots {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.loading-dots span {
+  width: 10px;
+  height: 10px;
+  background: #ff2d55; /* màu chấm (TikTok style) */
+  border-radius: 50%;
+  animation: bounce 1.4s infinite ease-in-out both;
+}
+
+.loading-dots span:nth-child(1) {
+  animation-delay: -0.32s;
+}
+
+.loading-dots span:nth-child(2) {
+  animation-delay: -0.16s;
+}
+
+@keyframes bounce {
+  0%, 80%, 100% {
+    transform: scale(0);
+    opacity: 0.3;
+  }
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+  
+  
+  </style>
+</head>
+<body>
+
+<div class="screen">
+  <div class="top-link">View transaction history</div>
+  <div class="header">
+    <img src="tiktok.png" class="logo-img" alt="TikTok">
+    <div class="title">Get Coins</div>
+  </div>
+  <div class="subtitle1">Recharge:</div>
+  <div class="subtitle">Save up to 25% compared to in-app purchase</div>
+
+  <div class="username-label">Enter Username</div>
+  <div class="input-container">
+    <input id="username" class="input" placeholder="@Username" />
+    <span id="status-icon"></span>
+  </div>
+
+  <div class="grid" id="grid">
+    <div class="card"><div class="coin-row"><img src="coin.png" class="coin-img"><span class="coin">70</span></div><div class="price">$0.74</div></div>
+    <div class="card"><div class="coin-row"><img src="coin.png" class="coin-img"><span class="coin">350</span></div><div class="price">$3.70</div></div>
+    <div class="card"><div class="coin-row"><img src="coin.png" class="coin-img"><span class="coin">700</span></div><div class="price">$7.40</div></div>
+    <div class="card"><div class="coin-row"><img src="coin.png" class="coin-img"><span class="coin">1,400</span></div><div class="price">$14.80</div></div>
+    <div class="card"><div class="coin-row"><img src="coin.png" class="coin-img"><span class="coin">3,500</span></div><div class="price">$36.99</div></div>
+    <div class="card"><div class="coin-row"><img src="coin.png" class="coin-img"><span class="coin">7,000</span></div><div class="price">$73.99</div></div>
+    <div class="card"><div class="coin-row"><img src="coin.png" class="coin-img"><span class="coin">15,000</span></div><div class="price">$146.99</div></div>
+    <div class="card custom" id="custom-card">
+      <div class="custom-title">Custom</div>
+      <div class="custom-sub">Large amount supported</div>
+    </div>
+  </div>
+
+  <div class="payment">
+    <div class="payment-title">Payment method:</div>
+    <div class="methods">
+      <img src="visa.png" class="pay-logo" alt="VISA">
+      <img src="mastercard.png" class="pay-logo" alt="Mastercard">
+      <img src="american.png" class="pay-logo" alt="American Express">
+      <img src="paypal.png" class="pay-logo" alt="PayPal">
+      <img src="applepay.png" class="pay-logo" alt="ApplePay">
+    </div>
+  </div>
+
+  <button class="btn recharge-btn">Recharge</button>
+  <div class="secure">Secure payment</div>
+</div>
+
+<!-- Custom Modal -->
+<div id="custom-modal" class="modal-center">
+  <div class="custom-content">
+    <div class="custom-title-header">Custom</div>
+    <div class="input-display">
+      <img src="coin.png" class="coin-icon">
+      <span id="custom-coins-input">0</span>
+      <span class="cursor"></span>
+    </div>
+    <div class="keypad">
+      <div class="key" data-value="1">1</div>
+      <div class="key" data-value="2">2</div>
+      <div class="key" data-value="3">3</div>
+      <div class="key key-backspace" data-value="backspace">&leftarrow;</div>
+      <div class="key" data-value="4">4</div>
+      <div class="key" data-value="5">5</div>
+      <div class="key" data-value="6">6</div>
+      <div class="key" data-value="000">000</div>
+      <div class="key" data-value="7">7</div>
+      <div class="key" data-value="8">8</div>
+      <div class="key" data-value="9">9</div>
+      <div class="key" data-value="0">0</div>
+    </div>
+    <div class="total-price-display">Total <span id="custom-total-price">US$0.00</span></div>
+    <button class="recharge-btn-custom" id="custom-recharge-btn" disabled>Recharge</button>
+  </div>
+</div>
+
+<!-- Order Summary Modal (Ngoài) -->
+<div id="order-summary-modal" class="modal-overlay">
+  <div class="summary-content">
+    <div class="summary-header">
+      <span>Order summary</span>
+      <span class="summary-close" id="close-summary-modal">&times;</span>
+    </div>
+    <div class="summary-body">
+      <div class="summary-row">
+        <span>Account</span>
+        <span id="summary-username"></span>
+      </div>
+      <div class="summary-row">
+        <span id="summary-coins"></span>
+        <span id="summary-price"></span>
+      </div>
+      <div class="summary-row total-row">
+        <span>Total</span>
+        <span id="summary-total"></span>
+      </div>
+      <div class="payment-methods-section">
+        <div class="payment-select-title">Select a payment method</div>
+        <label class="radio-option">
+          <input type="radio" name="payment_method" value="paypal">
+          PayPal
+          <span class="payment-logos"><img src="paypal.png" alt="PayPal"></span>
+        </label>
+        <label class="radio-option">
+            <input type="radio" name="payment_method" value="card" checked>
+            Add Credit Or Debit Card
+            <span class="payment-logos">
+              <img src="visa.png" alt="VISA">
+              <img src="mastercard.png" alt="MasterCard">
+              <img src="american.png" alt="Amex">
+              <img src="applepay.png" alt="ApplePay">
+            </span>
+          </label>
+      </div>
+    </div>
+
+    <div class="terms">
+      By tapping Pay to make a purchase, you acknowledge that you are purchasing a limited license to access this virtual item subject to our <strong>Virtual Items Policy</strong>...
+    </div>
+    <div class="pay-now-container">
+      <button class="pay-now-btn" id="pay-now-btn">Pay now</button>
+    </div>
+  </div>
+</div>
+
+<!-- Order Summary Modal (Custom) -->
+<div id="order-summary-custom-modal" class="modal-overlay">
+  <div class="summary-content">
+    <div class="summary-header">
+      <span>Order summary</span>
+      <span class="summary-close" id="close-summary-custom-modal">&times;</span>
+    </div>
+    <div class="summary-body">
+      <div class="summary-row">
+        <span>Account</span>
+        <span id="summary-custom-username"></span>
+      </div>
+      <div class="summary-row">
+        <span id="summary-custom-coins"></span>
+        <span id="summary-custom-price"></span>
+      </div>
+      <div class="summary-row total-row">
+        <span>Total</span>
+        <span id="summary-custom-total"></span>
+      </div>
+      <div class="payment-methods-section">
+        <div class="payment-select-title">Select a payment method</div>
+        <label class="radio-option">
+          <input type="radio" name="payment_method_custom" value="card" checked>
+          Add Credit Or Debit Card
+          <span class="payment-logos">
+            <img src="visa.png" alt="VISA">
+            <img src="mastercard.png" alt="MasterCard">
+            <img src="american.png" alt="Amex">
+            <img src="applepay.png" alt="ApplePay">
+          </span>
+        </label>
+        <label class="radio-option">
+          <input type="radio" name="payment_method_custom" value="paypal">
+          PayPal
+          <span class="payment-logos"><img src="paypal.png" alt="PayPal"></span>
+        </label>
+      </div>
+    </div>
+    <div class="terms">
+      By tapping Pay to make a purchase, you acknowledge that you are purchasing a limited license to access this virtual item subject to our <strong>Virtual Items Policy</strong>...
+    </div>
+    <div class="pay-now-container">
+      <button class="pay-now-btn" id="pay-now-custom-btn">Pay now</button>
+    </div>
+  </div>
+</div>
+
+<!-- Processing Modal -->
+<div id="processing-modal" class="modal-center">
+  <div class="modal-content-center">
+
+    <div class="loading-dots">
+        <span></span>
+        <span></span>
+        <span></span>
+      </div>
+    
+        <h3>Processing your payment</h3>
+        <p>This could take a few seconds</p>
+        <div class="timer" id="payment-timer">05:00</div>
+
+  </div>
+</div>
+
+<!-- Success Modal -->
+<div id="success-modal" class="modal-center">
+  <div class="modal-content-center">
+    <div class="check-circle">&#10003;</div>
+    <h3>Successful Recharged</h3>
+    <p class="success-info">
+      <span id="final-coins">0 Coins</span> were sent to <strong id="final-username">@Username</strong><br>
+      This operation has been completed. It will be processed within 24 hours!
+    </p>
+    <button class="success-btn">Go back</button>
+  </div>
+</div>
+
+<script>
+let currentUsername = '';
+let currentCoins = 0;
+const COIN_RATE = 0.0105;
+
+const input = document.getElementById('username');
+const statusIcon = document.getElementById('status-icon');
+input.addEventListener('input', () => {
+  statusIcon.innerHTML = '<div class="spinner"></div>';
+  if (statusIcon.timer) clearTimeout(statusIcon.timer);
+  statusIcon.timer = setTimeout(()=>{ statusIcon.innerHTML = '<div class="check">&#10003;</div>'; }, 3000);
+});
+
+const cards = document.querySelectorAll('.card');
+const customModal = document.getElementById('custom-modal');
+const customCoinsInput = document.getElementById('custom-coins-input');
+const customTotalPrice = document.getElementById('custom-total-price');
+const customRechargeBtn = document.getElementById('custom-recharge-btn');
+let customInput = '0';
+
+function updateCustomDisplay(){
+  if(customInput.length>1 && customInput.startsWith('0')) customInput = customInput.slice(1);
+  if(customInput==='') customInput='0';
+  const coins=parseInt(customInput)||0;
+  const price = coins * COIN_RATE;
+  customCoinsInput.innerText=coins.toLocaleString('en-US');
+  customTotalPrice.innerText=`US$${price.toFixed(2)}`;
+  customRechargeBtn.disabled=(coins<=0);
+}
+
+document.querySelector('.keypad').addEventListener('click', e=>{
+  if(!e.target.classList.contains('key')) return;
+  const val=e.target.dataset.value;
+  if(val==='backspace') customInput=customInput.slice(0,-1);
+  else if(val==='000' && customInput.length<9) customInput+='000';
+  else if(customInput.length<9) customInput+=val;
+  updateCustomDisplay();
+});
+
+cards.forEach(c=>{
+  c.addEventListener('click', ()=>{
+    cards.forEach(x=>x.classList.remove('active'));
+    c.classList.add('active');
+    if(c.id==='custom-card'){
+      customInput='0';
+      updateCustomDisplay();
+      customModal.style.display='flex';
+    }
+  });
+});
+
+const rechargeBtn=document.querySelector('.recharge-btn');
+const summaryModal=document.getElementById('order-summary-modal');
+const closeSummaryModal=document.getElementById('close-summary-modal');
+const processingModal=document.getElementById('processing-modal');
+const timerDisplay=document.getElementById('payment-timer');
+const successModal=document.getElementById('success-modal');
+const payNowBtn=document.getElementById('pay-now-btn');
+
+// --- Nút Recharge ngoài ---
+function showOrderSummary(){
+  const activeCard = document.querySelector('.card.active');
+  if(!activeCard){ alert('Please select a coin package!'); return; }
+  currentCoins = parseInt(activeCard.querySelector('.coin').innerText.replace(/,/g,'')) || 0;
+  const priceText = activeCard.querySelector('.price').innerText;
+  document.getElementById('summary-username').innerText=`@${currentUsername.replace('@','')}`;
+  document.getElementById('summary-coins').innerText=`${currentCoins.toLocaleString('en-US')} coins`;
+  document.getElementById('summary-price').innerText=priceText;
+  document.getElementById('summary-total').innerText=priceText;
+  summaryModal.style.display='flex';
+}
+
+rechargeBtn.addEventListener('click', ()=>{
+  if(!input.value){ alert('Please enter your @Username first!'); return; }
+  currentUsername = input.value;
+  showOrderSummary();
+});
+
+// --- Nút Recharge trong Custom ---
+const summaryCustomModal = document.getElementById('order-summary-custom-modal');
+const closeSummaryCustomModal = document.getElementById('close-summary-custom-modal');
+const payNowCustomBtn = document.getElementById('pay-now-custom-btn');
+
+/*customRechargeBtn.addEventListener('click', () => {
+  if (!input.value) { alert('Please enter your @Username first!'); return; }
+  currentUsername = input.value;
+
+  const coins = parseInt(customInput) || 0;
+  const price = (coins * COIN_RATE).toFixed(2);
+
+  // Ẩn Custom Modal
+  customModal.style.display = 'none';
+
+  // Cập nhật custom card để active
+  const customCard = document.getElementById('custom-card');
+  customCard.querySelector('.coin').innerText = coins.toLocaleString('en-US');
+  customCard.querySelector('.price').innerText = `$${price}`;
+  cards.forEach(c => c.classList.remove('active'));
+  customCard.classList.add('active');
+
+  // Hiện Order Summary riêng
+  document.getElementById('summary-custom-username').innerText = `@${currentUsername.replace('@','')}`;
+  document.getElementById('summary-custom-coins').innerText = `${coins.toLocaleString('en-US')} coins`;
+  document.getElementById('summary-custom-price').innerText = `$${price}`;
+  document.getElementById('summary-custom-total').innerText = `$${price}`;
+
+  summaryCustomModal.style.display = 'flex';
+});*/
+
+customRechargeBtn.addEventListener('click', () => {
+  if (!input.value) { alert('Please enter your @Username first!'); return; }
+  currentUsername = input.value;
+
+  const coins = parseInt(customInput) || 0;
+  const price = (coins * COIN_RATE).toFixed(2);
+
+  
+  customModal.style.display = 'none';
+
+  
+  document.getElementById('summary-custom-username').innerText = `@${currentUsername.replace('@','')}`;
+  document.getElementById('summary-custom-coins').innerText = `${coins.toLocaleString('en-US')} coins`;
+  document.getElementById('summary-custom-price').innerText = `$${price}`;
+  document.getElementById('summary-custom-total').innerText = `$${price}`;
+
+
+  summaryCustomModal.style.display = 'flex';
+
+ 
+  currentCoins = coins;
+});
+
+
+// Đóng modals
+closeSummaryModal.addEventListener('click', ()=>{ summaryModal.style.display='none'; });
+summaryModal.addEventListener('click', e=>{ if(e.target===summaryModal) summaryModal.style.display='none'; });
+closeSummaryCustomModal.addEventListener('click', ()=>{ summaryCustomModal.style.display='none'; });
+summaryCustomModal.addEventListener('click', e=>{ if(e.target===summaryCustomModal) summaryCustomModal.style.display='none'; });
+customModal.addEventListener('click', e=>{ if(e.target===customModal) customModal.style.display='none'; });
+
+// --- Pay Now chung ---
+function processPayment(coins){
+  summaryModal.style.display='none';
+  summaryCustomModal.style.display='none';
+  processingModal.style.display='flex';
+  let minutes=5, seconds=0, elapsed=0, totalDemoSeconds=3;
+  timerDisplay.innerText=`${String(minutes).padStart(2,'0')}:${String(seconds).padStart(2,'0')}`;
+  clearInterval(window.countdownTimer);
+  window.countdownTimer=setInterval(()=>{
+    elapsed++;
+    if(seconds===0){ if(minutes>0){minutes--; seconds=59;} } else {seconds--;}
+    timerDisplay.innerText=`${String(minutes).padStart(2,'0')}:${String(seconds).padStart(2,'0')}`;
+    if(elapsed>=totalDemoSeconds){
+      clearInterval(window.countdownTimer);
+      processingModal.style.display='none';
+      document.getElementById('final-username').innerText=`@${currentUsername.replace('@','')}`;
+      document.getElementById('final-coins').innerText=`${coins.toLocaleString('en-US')} Coins`;
+      successModal.style.display='flex';
+    }
+  },1000);
+}
+
+payNowBtn.addEventListener('click', ()=>{ processPayment(currentCoins); });
+payNowCustomBtn.addEventListener('click', ()=>{ processPayment(parseInt(customInput) || 0); });
+
+// Reset app
+function resetApp(){
+  input.value=''; statusIcon.innerHTML='';
+  cards.forEach(c=>c.classList.remove('active'));
+  currentCoins=0; customInput='0';
+  customCoinsInput.innerText='0'; customTotalPrice.innerText='$0.00'; customRechargeBtn.disabled=true;
+  customModal.style.display='none'; summaryModal.style.display='none';
+  summaryCustomModal.style.display='none'; processingModal.style.display='none'; successModal.style.display='none';
+}
+document.querySelector('#success-modal .success-btn').addEventListener('click', resetApp);
+</script>
+</body>
+</html>
